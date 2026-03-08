@@ -1,0 +1,6 @@
+CompileFlags:
+  CompilationDatabase: build/Debug
+Hover:
+  ShowAKA: true
+Index:
+  External: None

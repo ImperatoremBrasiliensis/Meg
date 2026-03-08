@@ -1,0 +1,17 @@
+{
+   "version": 8,
+   "configurePresets": [
+      {
+         "name": "Debug",
+         "displayName": "Clang 19.1.7 aarch64-unknown-linux-gnu",
+         "description": "Usando compiladores: C = /usr/bin/clang, CXX = /usr/bin/clang++",
+         "binaryDir": "${sourceDir}/build/${presetName}",
+         "cacheVariables": {
+            "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
+            "CMAKE_C_COMPILER": "/usr/bin/clang",
+            "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
+            "CMAKE_BUILD_TYPE": "Debug"
+         }
+      }
+   ]
+}
