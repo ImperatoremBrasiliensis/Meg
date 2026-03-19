@@ -4,3 +4,5 @@ Hover:
   ShowAKA: true
 Index:
   External: None
+Documentation:
+  CommentFormat: Doxygen

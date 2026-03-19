@@ -1,10 +1,12 @@
 #include "compiler.hpp"
 
+#include <debug.hpp>
+
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <iostream>
-
-using namespace compiler;
+#include <vector>
 
 struct {
 	const char* output;
@@ -28,10 +30,10 @@ static bool process_args(int argc, char* argv[]) {
 
 			// Options
 			if (!strcmp(argv[i], "-o") && (i + 1) < argc) {
-				configs.output = ++argv[i];
+				configs.output = argv[i + 1];
 				continue;
 			} else {
-				std::cout << "You must specify a value to the option " << argv[i] << std::endl;
+				dbg::print(ERRO, "Unknown option '%s'.\n", argv[i]);
 				return false;
 			}
 
@@ -47,7 +49,7 @@ static bool process_args(int argc, char* argv[]) {
 		}
 	}
 
-	if (sources.empty())
+	if (compiler::sources.empty())
 		goto nosources;
 
 	return true;
