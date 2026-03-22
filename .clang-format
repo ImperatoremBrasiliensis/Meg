@@ -1,4 +1,4 @@
-AccessModifierOffset: 2
+AccessModifierOffset: -4
 AlignAfterOpenBracket: BlockIndent
 AlignArrayOfStructures: None
 AlignConsecutiveAssignments: None
@@ -29,7 +29,7 @@ BinPackArguments: false
 BinPackParameters: false
 BitFieldColonSpacing: None
 BreakAdjacentStringLiterals: false
-BreakAfterAttributes: Always
+BreakAfterAttributes: Leave
 BreakAfterReturnType: None
 BreakBeforeBinaryOperators: None
 BreakBeforeBraces: Attach
@@ -40,7 +40,7 @@ BreakInheritanceList: AfterColon
 BreakStringLiterals: false
 ColumnLimit: 0
 CompactNamespaces: false
-Cpp11BracedListStyle: false
+Cpp11BracedListStyle: FunctionCall
 EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always
 IncludeBlocks: Preserve
@@ -52,7 +52,7 @@ IndentPPDirectives: AfterHash
 InsertBraces: false
 InsertTrailingCommas: None
 IndentWidth: 4
-LambdaBodyIndentation: OuterScope
+LambdaBodyIndentation: Signature
 NamespaceIndentation: All
 PPIndentWidth: 4
 PackConstructorInitializers: Never

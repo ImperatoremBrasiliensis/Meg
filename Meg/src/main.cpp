@@ -1,10 +1,12 @@
 #include <cstring>
 
-#include <debug.hpp>
+#include <internal/debug.hpp>
 
 #include "compiler/compiler.hpp"
 
 int main(int argc, char* argv[]) {
+	dbg::init(true);
+
 	if (argc < 2) {
 		dbg::print(DEFT, "You must specify a sub-command before we go on.\n");
 		return 1;

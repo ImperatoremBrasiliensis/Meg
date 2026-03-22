@@ -3,7 +3,7 @@ add_library(meg-debug SHARED)
 target_sources(
    meg-debug
    PUBLIC
-   include/debug.hpp
+   include/internal/debug.hpp
    PRIVATE
    src/debug.cpp
 )

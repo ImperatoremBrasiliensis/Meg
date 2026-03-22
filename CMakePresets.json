@@ -4,7 +4,7 @@
       {
          "name": "Debug",
          "generator": "Ninja",
-         "displayName": "Clang 19.1.7 aarch64-unknown-linux-gnu",
+         "displayName": "Clang 22.1.2 aarch64-unknown-linux-gnu",
          "description": "Usando compiladores: C = /usr/bin/clang, CXX = /usr/bin/clang++",
          "binaryDir": "${sourceDir}/build/${presetName}",
          "cacheVariables": {

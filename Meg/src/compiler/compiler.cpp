@@ -1,6 +1,6 @@
 #include "compiler.hpp"
 
-#include <debug.hpp>
+#include <internal/debug.hpp>
 
 #include <cstdio>
 #include <cstring>
@@ -33,8 +33,18 @@ static bool process_args(int argc, char* argv[]) {
 				configs.output = argv[i + 1];
 				continue;
 			} else {
-				dbg::print(ERRO, "Unknown option '%s'.\n", argv[i]);
-				return false;
+				dbg::throw_exception({"E1", dbg::UNO_E});
+				dbg::session s{true, false};
+				s.throw_exception({"H", dbg::DUNO_E});
+
+				std::vector<dbg::exception> ges = dbg::get_exceptions();
+				for (dbg::exception &e: ges)
+					dbg::def("%s\n", e.msg);
+
+				std::vector<dbg::exception> les = s.get_exceptions();
+				for (dbg::exception &e: les)
+					dbg::def("%s\n", e.msg);
+				//return false;
 			}
 
 			printf("Unknown option or flag '%s'.\n", argv[i]);

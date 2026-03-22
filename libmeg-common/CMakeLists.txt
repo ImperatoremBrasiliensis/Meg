@@ -3,7 +3,7 @@ add_library(meg-common STATIC)
 target_sources(
    meg-common
    PUBLIC
-   include/common.hpp
+   include/internal/common.hpp
    PRIVATE
    src/common.cpp
 )
