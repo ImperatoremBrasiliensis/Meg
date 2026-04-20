@@ -1,5 +1,5 @@
 AccessModifierOffset: -4
-AlignAfterOpenBracket: BlockIndent
+AlignAfterOpenBracket: true
 AlignArrayOfStructures: None
 AlignConsecutiveAssignments: None
 AlignConsecutiveBitFields: None
@@ -28,11 +28,39 @@ AlwaysBreakBeforeMultilineStrings: false
 BinPackArguments: false
 BinPackParameters: false
 BitFieldColonSpacing: None
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: false
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: false
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
 BreakAdjacentStringLiterals: false
 BreakAfterAttributes: Leave
+BreakAfterOpenBracketBracedList: true
+BreakAfterOpenBracketFunction: true
+BreakAfterOpenBracketIf: true
+BreakAfterOpenBracketLoop: true
+BreakAfterOpenBracketSwitch: true
 BreakAfterReturnType: None
 BreakBeforeBinaryOperators: None
-BreakBeforeBraces: Attach
+BreakBeforeBraces: Custom
+BreakBeforeCloseBracketBracedList: true
+BreakBeforeCloseBracketFunction: true
+BreakBeforeCloseBracketIf: true
+BreakBeforeCloseBracketLoop: true
+BreakBeforeCloseBracketSwitch: true
 BreakBeforeTernaryOperators: false
 BreakConstructorInitializers: AfterColon
 BreakFunctionDefinitionParameters: false
@@ -40,7 +68,8 @@ BreakInheritanceList: AfterColon
 BreakStringLiterals: false
 ColumnLimit: 0
 CompactNamespaces: false
-Cpp11BracedListStyle: FunctionCall
+ConstructorInitializerIndentWidth: 8
+Cpp11BracedListStyle: true
 EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always
 IncludeBlocks: Preserve
@@ -56,10 +85,9 @@ LambdaBodyIndentation: Signature
 NamespaceIndentation: All
 PPIndentWidth: 4
 PackConstructorInitializers: Never
-PointerAlignment: Left
+PointerAlignment: Right
 ReferenceAlignment: Right
 ReflowComments: false
-RemoveBracesLLVM: true
 RequiresClausePosition: WithPreceding
 SeparateDefinitionBlocks: Leave
 SkipMacroDefinitionBody: true

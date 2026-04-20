@@ -2,16 +2,23 @@
    "version": 8,
    "configurePresets": [
       {
-         "name": "Debug",
+         "name": "default",
+         "description": "Default preset",
          "generator": "Ninja",
-         "displayName": "Clang 22.1.2 aarch64-unknown-linux-gnu",
-         "description": "Usando compiladores: C = /usr/bin/clang, CXX = /usr/bin/clang++",
          "binaryDir": "${sourceDir}/build/${presetName}",
          "cacheVariables": {
-            "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
-            "CMAKE_C_COMPILER": "/usr/bin/clang-22",
-            "CMAKE_CXX_COMPILER": "/usr/bin/clang++-22",
-            "CMAKE_BUILD_TYPE": "Debug"
+            "CMAKE_C_FLAGS": "-Wall -Wextra -Werror -pedantic-errors",
+            "CMAKE_CXX_FLAGS": "-Wall -Wextra -Werror -pedantic-errors -fno-exceptions -fno-rtti"
+         }
+      },
+      {
+         "name": "Debug",
+         "description": "Enable debugging",
+         "binaryDir": "${sourceDir}/build/${presetName}",
+         "cacheVariables": {
+            "CMAKE_BUILD_TYPE": "Debug",
+            "CMAKE_C_FLAGS_DEBUG": "-O0 -g",
+            "CMAKE_CXX_FLAGS_DEBUG": "-O0 -g"
          }
       }
    ]

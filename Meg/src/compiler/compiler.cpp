@@ -1,6 +1,7 @@
 #include "compiler.hpp"
 
-#include <internal/debug.hpp>
+#include <lunique/debug.hpp>
+#include <lunique/filesystem.hpp>
 
 #include <cstdio>
 #include <cstring>
@@ -8,16 +9,18 @@
 #include <iostream>
 #include <vector>
 
+using namespace lunique;
+
 struct {
-	const char* output;
+	const char *output;
 	bool shared;
 } configs;
 
-std::vector<const char*> compiler::sources;
+std::vector<const char *> compiler::sources;
 
 // static bool config(int argc, char* argv[]);
 
-static bool process_args(int argc, char* argv[]) {
+static bool process_args(int argc, char *argv[]) {
 	if (argc < 1)
 		goto nosources;
 	for (int i = 0; i < argc; i++) {
@@ -33,18 +36,6 @@ static bool process_args(int argc, char* argv[]) {
 				configs.output = argv[i + 1];
 				continue;
 			} else {
-				dbg::throw_exception({"E1", dbg::UNO_E});
-				dbg::session s{true, false};
-				s.throw_exception({"H", dbg::DUNO_E});
-
-				std::vector<dbg::exception> ges = dbg::get_exceptions();
-				for (dbg::exception &e: ges)
-					dbg::def("%s\n", e.msg);
-
-				std::vector<dbg::exception> les = s.get_exceptions();
-				for (dbg::exception &e: les)
-					dbg::def("%s\n", e.msg);
-				//return false;
 			}
 
 			printf("Unknown option or flag '%s'.\n", argv[i]);
@@ -69,7 +60,7 @@ nosources:
 	return false;
 }
 
-int compiler::compile(int argc, char* argv[]) noexcept {
+int compiler::compile(int argc, char *argv[]) noexcept {
 	if (!process_args(argc, argv))
 		return 1;
 

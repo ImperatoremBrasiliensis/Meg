@@ -1,6 +1,6 @@
-#include <internal/debug.hpp>
+#include <lunique/debug.hpp>
 
-#include <internal/common.hpp>
+#include <lunique/common.hpp>
 
 #include <cassert>
 #include <csignal>
@@ -13,9 +13,11 @@
 #include <mutex>
 #include <vector>
 
+using namespace lunique;
+
 // Debugger data.
 static struct data {
-	std::mutex mtx;
+	std::recursive_mutex mtx;
 	std::vector<dbg::exception> e_stack;
 	char buffer[256];
 	bool enabled;
@@ -23,20 +25,20 @@ static struct data {
 
 // Per thread data.
 thread_local static struct thrd_data {
-	std::vector<dbg::session*> s_stack;
+	std::vector<dbg::session *> s_stack;
 } thrd_data;
 
 // Signal handler.
 static void handler(int signal) {
 	switch (signal) {
 	case SIGINT:
-		dbg::print(FATA | DEFT, "Application interrupted. Exiting now...\n");
+		dbg::print(LUNIQUE_FATA | LUNIQUE_DEFT, "Application interrupted. Exiting now...\n");
 		exit(signal);
 	case SIGABRT:
-		dbg::print(FATA | ERRO, "Application aborting now!\n");
+		dbg::print(LUNIQUE_FATA | LUNIQUE_ERRO, "Application aborting now!\n");
 		exit(signal);
 	case SIGSEGV:
-		dbg::print(FATA | ERRO, "Segmentation fault. Exition now...\n");
+		dbg::print(LUNIQUE_FATA | LUNIQUE_ERRO, "Segmentation fault. Exition now...\n");
 		exit(signal);
 	}
 }
@@ -65,7 +67,7 @@ dbg::session::session(bool enable, bool pers) noexcept {
 	}();
 
 	// If another `session` has the same ID `goto error`.
-	for (const session* e: thrd_data.s_stack)
+	for (const session *e: thrd_data.s_stack)
 		if (e->id == id)
 			goto error;
 
@@ -83,9 +85,6 @@ error:
 
 // The `dbg::session` struct destructor.
 dbg::session::~session() {
-	if (!id)
-		return;
-
 	// If the session exceptions aren't persistent, remove them from main stack.
 	if (!pers_es) {
 		std::erase_if(
@@ -106,7 +105,7 @@ dbg::session::~session() {
 	// Removes this session from thread sessions stack.
 	std::erase_if(
 		thrd_data.s_stack,
-		[this](session* s) {
+		[this](session *s) {
 			return s == this;
 		}
 	);
@@ -190,27 +189,37 @@ bool dbg::session::throw_exception(exception e) noexcept {
 	return dbg::throw_exception(e);
 }
 
+bool dbg::session::throw_exception(
+	const char *msg,
+	exception_code code,
+	std::source_location meta
+) noexcept {
+	exception e{msg, code, meta};
+	e.session_id = id;
+	return dbg::throw_exception(e);
+}
+
 // Prints a formatted log message with detailed time information in the session.
-bool dbg::session::log(uint8_t flags, const char* msg, ...) noexcept {
+bool dbg::session::log(uint8_t flags, const char *msg, ...) noexcept {
 	// If the session or all debugger is disabled, returns `true`.
 	if ((!dbg::is_enabled() && !enabled) || !id)
 		return false;
 
 	va_list va;
 	va_start(va, msg);
-	bool r = dbg::log(PERS | flags, msg, va);
+	bool r = dbg::log(LUNIQUE_PERS | flags, msg, va);
 	va_end(va);
 
 	return r;
 }
 
 // Prints a formatted log message with detailed time information in the session.
-bool dbg::session::log(uint8_t flags, const char* msg, va_list va) noexcept {
+bool dbg::session::log(uint8_t flags, const char *msg, va_list va) noexcept {
 	// If the session or all debugger is disabled, returns `false`.
 	if ((!dbg::is_enabled() && !enabled) || !id)
 		return false;
 
-	return dbg::log(PERS | flags, msg, va);
+	return dbg::log(LUNIQUE_PERS | flags, msg, va);
 }
 
 // Enables the debugger.
@@ -243,7 +252,26 @@ bool dbg::throw_exception(dbg::exception e) noexcept {
 	data.e_stack.push_back(e);
 
 	// Updates all existing sessions with the new exception.
-	for (session* s: thrd_data.s_stack)
+	for (session *s: thrd_data.s_stack)
+		s->e_stack.push_back(e);	// Is per thread.
+
+	return true;
+}
+
+bool dbg::throw_exception(
+	const char *msg,
+	exception_code code,
+	std::source_location meta
+) noexcept {
+	// The exception `code` and `msg` must not be null.
+	if (!msg || !code)
+		return false;
+
+	exception e{msg, code, meta};
+	data.e_stack.push_back(e);
+
+	// Updates all existing sessions with the new exception.
+	for (session *s: thrd_data.s_stack)
 		s->e_stack.push_back(e);	// Is per thread.
 
 	return true;
@@ -251,6 +279,9 @@ bool dbg::throw_exception(dbg::exception e) noexcept {
 
 // Gets the last exception.
 dbg::exception dbg::get_exception() noexcept {
+	if (data.e_stack.empty())
+		return {nullptr, dbg::NO_EXCEPTION};
+
 	return data.e_stack.back();
 }
 
@@ -288,26 +319,26 @@ size_t dbg::get_exception_count() noexcept {
 // An structure containing the prefixes
 // that are used in print and log functions.
 constexpr struct {
-	const char* fer = "\033[1mMeg \033[38;5;196mFatal Error: \033[0m";
-	const char* err = "\033[1mMeg \033[38;5;196mError: \033[0m";
-	const char* wrn = "\033[1mMeg \033[38;5;220mWarning: \033[0m";
-	const char* dbg = "\033[1mMeg \033[38;5;200mDebug: \033[0m";
-	const char* inf = "\033[1mMeg \033[38;5;040mInfo: \033[0m";
-	const char* def = "\033[1mMeg: \033[0m";
+	const char *fer = "\033[1mMeg \033[38;5;196mFatal Error:\033[0m\n";
+	const char *err = "\033[1mMeg \033[38;5;196mError:\033[0m\n";
+	const char *wrn = "\033[1mMeg \033[38;5;220mWarning:\033[0m\n";
+	const char *dbg = "\033[1mMeg \033[38;5;200mDebug:\033[0m\n";
+	const char *inf = "\033[1mMeg \033[38;5;040mInfo:\033[0m\n";
+	const char *def = "\033[1mMeg:\033[0m\n";
 } prefix;
 
 // Function that choses the print/log prefix in `prefix` struct.
-in_line const char* choose_prefix(uint8_t flags) {
-	if (flags & ERRO)
-		if (flags & FATA)
+in_line const char *choose_prefix(uint8_t flags) {
+	if (flags & LUNIQUE_ERRO)
+		if (flags & LUNIQUE_FATA)
 			return prefix.fer;
 		else
 			return prefix.err;
-	else if (flags & WARN)
+	else if (flags & LUNIQUE_WARN)
 		return prefix.wrn;
-	else if (flags & DBUG)
+	else if (flags & LUNIQUE_DBUG)
 		return prefix.dbg;
-	else if (flags & INFO)
+	else if (flags & LUNIQUE_INFO)
 		return prefix.inf;
 	else
 		return prefix.def;
@@ -315,7 +346,7 @@ in_line const char* choose_prefix(uint8_t flags) {
 
 // Just a wrapper to `dbg::print` that receives a `va_list`.
 // Prints the `msg` with the prefix based on `flags`.
-bool dbg::print(uint8_t flags, const char* msg, ...) noexcept {
+bool dbg::print(uint8_t flags, const char *msg, ...) noexcept {
 	va_list va_args;
 	va_start(va_args, msg);
 	bool r = print(flags, msg, va_args);
@@ -324,35 +355,27 @@ bool dbg::print(uint8_t flags, const char* msg, ...) noexcept {
 }
 
 // Prints the `msg` with the prfix based on `flags`.
-bool dbg::print(uint8_t flags, const char* msg, va_list va) noexcept {
-	FILE* stream = flags & FATA ? stderr : stdout;
-	if (!msg)
-		fputs("(null)", stream);
+bool dbg::print(uint8_t flags, const char *msg, va_list va) noexcept {
+	FILE *stream = flags & LUNIQUE_FATA ? stderr : stdout;
 
-	const char* pfx = choose_prefix(flags);
+	const char *pfx = choose_prefix(flags);
 	fputs(pfx, stream);
 	vfprintf(stream, msg, va);
 
 	return true;
 }
 
-// Prints a formatted log message, with detailed time information.
-bool dbg::log(uint8_t flags, const char* msg, ...) noexcept {
-	va_list va_args;
-	va_start(va_args, msg);
-	bool r = log(flags, msg, va_args);
-	va_end(va_args);
-	return r;
-}
-
 // Prints a log, but receives a `va_list`.
-bool dbg::log(uint8_t flags, const char* msg, va_list va) noexcept {
+bool dbg::log(uint8_t flags, const char *msg, ...) noexcept {
 	// If `msg` is nullptr, returns; or
-	// If the flag `dbg::PERS` wasn't set AND debugger is not enabled, returns too.
-	if (!msg || (!(flags & PERS) && !is_enabled()))
+	// If the flag `dbg::LUNIQUE_PERS` wasn't set AND debugger is not enabled, returns too.
+	if (!msg || (!(flags & LUNIQUE_PERS) && !is_enabled()))
 		return false;
 
-	char buffer[256];
+	va_list va;
+	va_start(va, msg);
+
+	char buffer[512];
 	size_t offset = 0;
 	auto pfx = choose_prefix(flags);
 
@@ -379,10 +402,9 @@ bool dbg::log(uint8_t flags, const char* msg, va_list va) noexcept {
 		va
 	);
 
-	static std::mutex mtx;
-	mtx.lock();
-	sys_write(2, buffer, offset);
-	mtx.unlock();
+	common::sys_write(buffer, offset);
+
+	va_end(va);
 
 	return true;
 }

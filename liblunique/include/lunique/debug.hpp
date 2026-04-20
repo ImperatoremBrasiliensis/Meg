@@ -1,38 +1,31 @@
 #pragma once
 
-#include <internal/common.hpp>
+#include <lunique/common.hpp>
 
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
+#include <source_location>
 #include <vector>
 
-#define log_alias(name, flags) \
-in_line constexpr bool name(const char* msg, ...) noexcept { \
-	va_list va; \
-	va_start(va, msg); \
-	bool r = log(flags, msg, va); \
-	va_end(va); \
-	return r; \
-} \
-\
-in_line constexpr bool name(const char* msg, va_list va) noexcept { \
-	return log(flags, msg, va); \
+#define LUNIQUE_SET_ALIAS(name, func, flags) \
+in_line constexpr bool name(const char* msg, auto ...va) noexcept { \
+	return func(flags, msg, va...); \
 }
 
-#define DEFT (uint8_t) 0b00000000
-#define ERRO (uint8_t) 0b00000001
-#define WARN (uint8_t) 0b00000010
-#define DBUG (uint8_t) 0b00000100
-#define INFO (uint8_t) 0b00001000
-#define FATA (uint8_t) 0b00010000
-#define PERS (uint8_t) 0b00100000
+#define LUNIQUE_DEFT (uint8_t) 0b00000000
+#define LUNIQUE_ERRO (uint8_t) 0b00000001
+#define LUNIQUE_WARN (uint8_t) 0b00000010
+#define LUNIQUE_DBUG (uint8_t) 0b00000100
+#define LUNIQUE_INFO (uint8_t) 0b00001000
+#define LUNIQUE_FATA (uint8_t) 0b00010000
+#define LUNIQUE_PERS (uint8_t) 0b00100000
 
 /**
  * @brief The debug system, which can be used to print messages and logs,
  * throw and get exceptions and control program runtime.
  */
-namespace dbg {
+namespace lunique::dbg {
 	/**
 	 * @brief Initializes the debugger.
 	 * 
@@ -48,9 +41,11 @@ namespace dbg {
 	 */
 	typedef enum : uint16_t {
 		NO_EXCEPTION,
-		UNO_E,
-		DUNO_E,
-		TITRE_E
+		ALLOC_FAULT,
+		BUFFER_OVERFLOW,
+		INVALID_ARGUMENT,
+		NULL_POINTER,
+		OUT_OF_RANGE,
 	} exception_code;
 
 	/**
@@ -58,7 +53,9 @@ namespace dbg {
 	 * with a message explaining it.
 	 */
 	struct exception {
-		const char* msg;
+		const char *func_name;
+		int line;
+		const char *msg;
 		exception_code code;
 
 		/**
@@ -67,9 +64,15 @@ namespace dbg {
 		 * @param msg Defines a message to 
 		 * @param code 
 		 */
-		exception(const char* msg, exception_code code) noexcept:
-			msg(msg ? msg : "nullptr was set here."),
-			code(code) {
+		exception(
+			const char *msg,
+			exception_code code,
+			std::source_location meta = std::source_location::current()
+		) noexcept:
+				func_name(meta.function_name()),
+				line(meta.line()),
+				msg(msg),
+				code(code) {
 		}
 
 	private:
@@ -89,6 +92,7 @@ namespace dbg {
 		bool enabled:1, pers_es:1;
 
 		friend bool throw_exception(dbg::exception e) noexcept;
+		friend bool throw_exception(const char *msg, exception_code code, std::source_location) noexcept;
 
 	public:
 		/**
@@ -144,6 +148,21 @@ namespace dbg {
 		 * succesful; `false` if not.
 		 */
 		bool throw_exception(exception e) noexcept;
+
+		/**
+		 * @brief Throws a `dbg::exception` and stores
+		 * it in the session and main exception stack.
+		 * 
+		 * @param msg The exception message.
+		 * @param code The exception code.
+		 *
+		 * @return `true` if successful; `false` if not. 
+		 */
+		bool throw_exception(
+			const char *msg,
+			exception_code code,
+			std::source_location = std::source_location::current()
+		) noexcept;
 
 		/**
 		 * @brief Gets the last `dbg::exception` in the
@@ -210,15 +229,15 @@ namespace dbg {
 		 * 
 		 * @param flags Defines how function will behave
 		 * and how message will be printed, possible flags are:
-		 * `PERS` (persistent), `FATA` (fatal), `ERRO` (error),
-		 * `DBUG` (debug), `INFO` (information) and `DEFT` (default).
+		 * `LUNIQUE_PERS` (persistent), `LUNIQUE_FATA` (fatal), `LUNIQUE_ERRO` (error),
+		 * `LUNIQUE_DBUG` (debug), `LUNIQUE_INFO` (information) and `LUNIQUE_DEFT` (default).
 		 *
 		 * @details The message prefix will be printed according
-		 * to @p flags parameter. Exceptionally, if `FATA` was wet 
-		 * with `ERRO`, the prefix will be `Meg Fatal Error`.
-		 * If `PERS` was set, the log message will always be printed,
+		 * to @p flags parameter. Exceptionally, if `LUNIQUE_FATA` was wet 
+		 * with `LUNIQUE_ERRO`, the prefix will be `Meg Fatal Error`.
+		 * If `LUNIQUE_PERS` was set, the log message will always be printed,
 		 * until with debugger disabled.
-		 * `DEFT` makes that message prefix be only `Meg`.
+		 * `LUNIQUE_DEFT` makes that message prefix be only `Meg`.
 		 *
 		 * @param msg The message to be printed into the stream. Should
 		 * not be `nullptr`.
@@ -226,7 +245,7 @@ namespace dbg {
 		 * @return `true` if the function was succesful; `false` if
 		 * not.
 		 */
-		bool log(uint8_t flags, const char* msg, ...) noexcept;
+		bool log(uint8_t flags, const char *msg, ...) noexcept;
 
 		/**
 		 * @brief Prints a formatted log message with
@@ -234,15 +253,15 @@ namespace dbg {
 		 * 
 		 * @param flags Defines how function will behave
 		 * and how message will be printed, possible flags are:
-		 * `PERS` (persistent), `FATA` (fatal), `ERRO` (error),
-		 * `DBUG` (debug), `INFO` (information) and `DEFT` (default).
+		 * `LUNIQUE_PERS` (persistent), `LUNIQUE_FATA` (fatal), `LUNIQUE_ERRO` (error),
+		 * `LUNIQUE_DBUG` (debug), `LUNIQUE_INFO` (information) and `LUNIQUE_DEFT` (default).
 		 *
 		 * @details The message prefix will be printed according
-		 * to @p flags parameter. Exceptionally, if `FATA` was wet 
-		 * with `ERRO`, the prefix will be `Meg Fatal Error`.
-		 * If `PERS` was set, the log message will always be printed,
+		 * to @p flags parameter. Exceptionally, if `LUNIQUE_FATA` was wet 
+		 * with `LUNIQUE_ERRO`, the prefix will be `Meg Fatal Error`.
+		 * If `LUNIQUE_PERS` was set, the log message will always be printed,
 		 * until with debugger disable.
-		 * `DEFT` makes that message prefix be only `Meg`.
+		 * `LUNIQUE_DEFT` makes that message prefix be only `Meg`.
 		 *
 		 * @param msg The message to be printed into the stream. Should
 		 * not be `nullptr`.
@@ -253,30 +272,29 @@ namespace dbg {
 		 * @return `true` if the function was succesful; `false` if
 		 * not.
 		 */
-		bool log(uint8_t flags, const char* msg, va_list va) noexcept;
+		bool log(uint8_t flags, const char *msg, va_list va) noexcept;
 
-		log_alias(ferr, PERS | FATA | ERRO);
-		log_alias(err, ERRO);
-		log_alias(war, WARN);
-		log_alias(deb, DBUG);
-		log_alias(inf, INFO);
-		log_alias(def, DEFT);
+		LUNIQUE_SET_ALIAS(log_ferr, log, LUNIQUE_PERS | LUNIQUE_FATA | LUNIQUE_ERRO);
+		LUNIQUE_SET_ALIAS(log_err, log, LUNIQUE_ERRO);
+		LUNIQUE_SET_ALIAS(log_war, log, LUNIQUE_WARN);
+		LUNIQUE_SET_ALIAS(log_deb, log, LUNIQUE_DBUG);
+		LUNIQUE_SET_ALIAS(log_inf, log, LUNIQUE_INFO);
+		LUNIQUE_SET_ALIAS(log_def, log, LUNIQUE_DEFT);
 
-		log_alias(pferr, PERS | FATA | ERRO);
-		log_alias(perr, PERS | ERRO);
-		log_alias(pwar, PERS | WARN);
-		log_alias(pdeb, PERS | DBUG);
-		log_alias(pinf, PERS | INFO);
-		log_alias(pdef, PERS | DEFT);
+		LUNIQUE_SET_ALIAS(log_pferr, log, LUNIQUE_PERS | LUNIQUE_FATA | LUNIQUE_ERRO);
+		LUNIQUE_SET_ALIAS(log_perr, log, LUNIQUE_PERS | LUNIQUE_ERRO);
+		LUNIQUE_SET_ALIAS(log_pwar, log, LUNIQUE_PERS | LUNIQUE_WARN);
+		LUNIQUE_SET_ALIAS(log_pdeb, log, LUNIQUE_PERS | LUNIQUE_DBUG);
+		LUNIQUE_SET_ALIAS(log_pinf, log, LUNIQUE_PERS | LUNIQUE_INFO);
+		LUNIQUE_SET_ALIAS(log_pdef, log, LUNIQUE_PERS | LUNIQUE_DEFT);
 	};
-
 	/**
 	 * @brief Sets debugger enabled.
 	 * 
 	 * @details Sets debugger enabled or disabled,
 	 * which is essential for `dbg::log` function
 	 * call ( @ref log ). If the call to `dbg::log` 
-	 * has the `PERS` (persistence) flag, you have
+	 * has the `LUNIQUE_PERS` (persistence) flag, you have
 	 * nothing to worry about.
 	 *
 	 * @param active If `true`, debugging will
@@ -316,14 +334,28 @@ namespace dbg {
 	bool throw_exception(exception e) noexcept;
 
 	/**
+	 * @brief Throws a `dbg::exception` and stores
+	 * it in the exception stack.
+	 * 
+	 * @param msg The exception message.
+	 * @param code The exception code.
+	 *
+	 * @return `true` if successful; `false` if not. 
+	 */
+	bool throw_exception(
+		const char *msg,
+		exception_code code,
+		std::source_location = std::source_location::current()
+	) noexcept;
+
+	/**
 	 * @brief Gets the last `dbg::exception` in the
 	 * exception stack.
 	 *
 	 * @returns The last exception in the 
 	 * exception stack.
 	 */
-	[[nodiscard]]
-	exception get_exception() noexcept;
+	[[nodiscard]] exception get_exception() noexcept;
 
 	/**
 	 * @brief Gets the `dbg::exception` at @p at posistion
@@ -381,15 +413,15 @@ namespace dbg {
 	 * 
 	 * @param flags Defines how function will behave
 	 * and how message will be printed, possible flags are:
-	 * `PERS` (persistent), `FATA` (fatal), `ERRO` (error),
-	 * `DBUG` (debug), `INFO` (information) and `DEFT` (default).
+	 * `LUNIQUE_PERS` (persistent), `LUNIQUE_FATA` (fatal), `LUNIQUE_LUNIQUE_ERRO` (error),
+	 * `LUNIQUE_DBUG` (debug), `LUNIQUE_INFO` (information) and `LUNIQUE_DEFT` (default).
 	 *
 	 * @details The message prefix will be printed according
-	 * to @p flags parameter. Exceptionally, if `FATA` was wet 
-	 * with `ERRO`, the prefix will be `Meg Fatal Error`.
-	 * If `PERS` was set, the log message will always be printed,
+	 * to @p flags parameter. Exceptionally, if `LUNIQUE_FATA` was wet 
+	 * with `LUNIQUE_ERRO`, the prefix will be `Meg Fatal Error`.
+	 * If `LUNIQUE_PERS` was set, the log message will always be printed,
 	 * until with debugger disabled.
-	 * `DEFT` makes that message prefix be only `Meg`.
+	 * `LUNIQUE_DEFT` makes that message prefix be only `Meg`.
 	 *
 	 * @param msg The message to be printed into the stream. Should
 	 * not be `nullptr`.
@@ -397,34 +429,7 @@ namespace dbg {
 	 * @return `true` if the function was succesful; `false` if
 	 * not.
 	 */
-	bool log(uint8_t flags, const char* msg, ...) noexcept;
-
-	/**
-	 * @brief Prints a formatted log message with
-	 * detailed time information.
-	 * 
-	 * @param flags Defines how function will behave
-	 * and how message will be printed, possible flags are:
-	 * `PERS` (persistent), `FATA` (fatal), `ERRO` (error),
-	 * `DBUG` (debug), `INFO` (information) and `DEFT` (default).
-	 *
-	 * @details The message prefix will be printed according
-	 * to @p flags parameter. Exceptionally, if `FATA` was wet 
-	 * with `ERRO`, the prefix will be `Meg Fatal Error`.
-	 * If `PERS` was set, the log message will always be printed,
-	 * until with debugger disable.
-	 * `DEFT` makes that message prefix be only `Meg`.
-	 *
-	 * @param msg The message to be printed into the stream. Should
-	 * not be `nullptr`.
-	 *
-	 * @param va A started `va_list` with values to
-	 * placeholders in the @p msg string.
-	 *
-	 * @return `true` if the function was succesful; `false` if
-	 * not.
-	 */
-	bool log(uint8_t flags, const char* msg, va_list va) noexcept;
+	bool log(uint8_t flags, const char *msg, ...) noexcept;
 
 	/**
 	 * @brief Prints a message with a prefix based on the
@@ -433,8 +438,8 @@ namespace dbg {
 	 *
 	 * @param flags Defines how function will behave
 	 * and how message will be printed, possible flags are:
-	 * `FATA` (fatal), `ERRO` (error), `DBUG` (debug),
-	 * `INFO` (information) and `DEFT` (default).
+	 * `LUNIQUE_FATA` (fatal), `LUNIQUE_ERRO` (error), `LUNIQUE_DBUG` (debug),
+	 * `LUNIQUE_INFO` (information) and `LUNIQUE_DEFT` (default).
 	 *
 	 * @param msg A string containing the message to be 
 	 * printed into the output.
@@ -443,16 +448,16 @@ namespace dbg {
 	 * the function will print "(null)".
 	 *
 	 * @details The message prefix will be printed according
-	 * to @p flags parameter. Exceptionally, if `FATA` was set 
-	 * with `ERRO`, the prefix will be `Meg Fatal Error`. `FATA` 
+	 * to @p flags parameter. Exceptionally, if `LUNIQUE_FATA` was set 
+	 * with `LUNIQUE_ERRO`, the prefix will be `Meg Fatal Error`. `LUNIQUE_FATA` 
 	 * also makes that the message will be printed to `stderr`.
-	 * `DEFT` makes that message prefix will be only `Meg`. 
+	 * `LUNIQUE_DEFT` makes that message prefix will be only `Meg`. 
 	 * this allows you print messages to the output cleanly.
 	 *
 	 * @return `true` if the function was succesful; and
 	 * `false` if not.
 	 */
-	bool print(uint8_t flags, const char* msg, ...) noexcept;
+	bool print(uint8_t flags, const char *msg, ...) noexcept;
 
 	/**
 	 * @brief Prints a message with a prefix based on the
@@ -461,8 +466,8 @@ namespace dbg {
 	 *
 	 * @param flags Defines how function will behave
 	 * and how message will be printed, possible flags are:
-	 * `FATA` (fatal), `ERRO` (error), `DBUG` (debug),
-	 * `INFO` (information) and `DEFT` (default).
+	 * `LUNIQUE_FATA` (fatal), `LUNIQUE_ERRO` (error), `LUNIQUE_DBUG` (debug),
+	 * `LUNIQUE_INFO` (information) and `LUNIQUE_DEFT` (default).
 	 *
 	 * @param msg A string containing the message to be 
 	 * printed into the output.
@@ -474,28 +479,35 @@ namespace dbg {
 	 * the function will print "(null)".
 	 *
 	 * @details The message prefix will be printed according
-	 * to @p flags parameter. Exceptionally, if `FATA` was set 
-	 * with `ERRO`, the prefix will be `Meg Fatal Error`. `FATA` 
+	 * to @p flags parameter. Exceptionally, if `LUNIQUE_FATA` was set 
+	 * with `LUNIQUE_ERRO`, the prefix will be `Meg Fatal Error`. `LUNIQUE_FATA` 
 	 * also makes that the message will be printed to `stderr`.
-	 * `DEFT` makes that message prefix will be only `Meg`. 
+	 * `LUNIQUE_DEFT` makes that message prefix will be only `Meg`. 
 	 * this allows you print messages to the output cleanly.
 	 *
 	 * @return `true` if the function was succesful; and
 	 * `false` if not.
 	 */
-	bool print(uint8_t flags, const char* msg, va_list va) noexcept;
+	bool print(uint8_t flags, const char *msg, va_list va) noexcept;
 
-	log_alias(ferr, PERS | FATA | ERRO);
-	log_alias(err, ERRO);
-	log_alias(war, WARN);
-	log_alias(deb, DBUG);
-	log_alias(inf, INFO);
-	log_alias(def, DEFT);
+	LUNIQUE_SET_ALIAS(prt_ferr, print, LUNIQUE_PERS | LUNIQUE_FATA | LUNIQUE_ERRO);
+	LUNIQUE_SET_ALIAS(prt_err, print, LUNIQUE_ERRO);
+	LUNIQUE_SET_ALIAS(prt_war, print, LUNIQUE_WARN);
+	LUNIQUE_SET_ALIAS(prt_deb, print, LUNIQUE_DBUG);
+	LUNIQUE_SET_ALIAS(prt_inf, print, LUNIQUE_INFO);
+	LUNIQUE_SET_ALIAS(prt_def, print, LUNIQUE_DEFT);
 
-	log_alias(pferr, PERS | FATA | ERRO);
-	log_alias(perr, PERS | ERRO);
-	log_alias(pwar, PERS | WARN);
-	log_alias(pdeb, PERS | DBUG);
-	log_alias(pinf, PERS | INFO);
-	log_alias(pdef, PERS | DEFT);
-};	  // namespace dbg
+	LUNIQUE_SET_ALIAS(log_ferr, log, LUNIQUE_PERS | LUNIQUE_FATA | LUNIQUE_ERRO);
+	LUNIQUE_SET_ALIAS(log_err, log, LUNIQUE_ERRO);
+	LUNIQUE_SET_ALIAS(log_war, log, LUNIQUE_WARN);
+	LUNIQUE_SET_ALIAS(log_deb, log, LUNIQUE_DBUG);
+	LUNIQUE_SET_ALIAS(log_inf, log, LUNIQUE_INFO);
+	LUNIQUE_SET_ALIAS(log_def, log, LUNIQUE_DEFT);
+
+	LUNIQUE_SET_ALIAS(log_pferr, log, LUNIQUE_PERS | LUNIQUE_FATA | LUNIQUE_ERRO);
+	LUNIQUE_SET_ALIAS(log_perr, log, LUNIQUE_PERS | LUNIQUE_ERRO);
+	LUNIQUE_SET_ALIAS(log_pwar, log, LUNIQUE_PERS | LUNIQUE_WARN);
+	LUNIQUE_SET_ALIAS(log_pdeb, log, LUNIQUE_PERS | LUNIQUE_DBUG);
+	LUNIQUE_SET_ALIAS(log_pinf, log, LUNIQUE_PERS | LUNIQUE_INFO);
+	LUNIQUE_SET_ALIAS(log_pdef, log, LUNIQUE_PERS | LUNIQUE_DEFT);
+};	  // namespace lunique::dbg
