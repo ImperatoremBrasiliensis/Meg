@@ -1,7 +1,14 @@
+/* 
+ * ======================================
+ * SPDX-License-Identifier: GPL-3.0-only
+ * Copyright (c) 2026 Elizeu S. Souza
+ * ======================================
+ */
+
 #include "compiler.hpp"
 
-#include <lunique/debug.hpp>
-#include <lunique/filesystem.hpp>
+#include <Meg/debug.hpp>
+#include <Meg/filesystem.hpp>
 
 #include <cstdio>
 #include <cstring>
@@ -9,7 +16,7 @@
 #include <iostream>
 #include <vector>
 
-using namespace lunique;
+using namespace Meg;
 
 struct {
 	const char *output;

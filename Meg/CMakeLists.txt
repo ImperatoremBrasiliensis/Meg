@@ -10,4 +10,4 @@ target_sources(
    src/compiler/compiler.hpp
 )
 
-target_link_libraries(Meg PUBLIC lunique)
+target_link_libraries(Meg PUBLIC libMeg)
