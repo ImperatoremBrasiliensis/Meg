@@ -23,7 +23,7 @@ jobs:
            run: |
                export CC=clang-22
                export CXX=clang++-22
-               cmake -B build -G ninja --preset=Unitests -DCMAKE_C_COMPILER=clang-22 -DCMAKE_CXX_COMPILER=clang++-22
+               cmake -B build -G Ninja --preset=Unitests -DCMAKE_C_COMPILER=clang-22 -DCMAKE_CXX_COMPILER=clang++-22
          
          - name: Run
            run: ctest --test-dir build --output-on-failure
