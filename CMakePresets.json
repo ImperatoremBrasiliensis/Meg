@@ -3,9 +3,8 @@
    "configurePresets": [
       {
          "name": "base",
-         "description": "Base preset",
          "generator": "Ninja",
-         "binaryDir": "${sourceDir}/build/${presetName}",
+         "binaryDir": "${sourceDir}/build/",
          "cacheVariables": {
             "MEG_ENABLE_TESTING": true,
             "CMAKE_C_FLAGS": "-Wall -Wextra -Werror -pedantic-errors",
@@ -14,25 +13,32 @@
       },
       {
          "name": "Debug",
-         "description": "Enable debugging",
          "inherits": "base",
-         "binaryDir": "${sourceDir}/build/${presetName}",
+         "binaryDir": "${sourceDir}/build/",
          "cacheVariables": {
             "CMAKE_BUILD_TYPE": "Debug",
-            "CMAKE_C_FLAGS_DEBUG": "-O0 -g3",
-            "CMAKE_CXX_FLAGS_DEBUG": "-O0 -g3"
+            "CMAKE_C_FLAGS_DEBUG": "-fno-omit-frame-pointer -O0 -g3",
+            "CMAKE_CXX_FLAGS_DEBUG": " -fno-omit-frame-pointer -O0 -g3"
+         }
+      },
+      {
+         "name": "Release",
+         "inherits": "base",
+         "cacheVariables": {
+            "CMAKE_BUILD_TYPE": "Release",
+            "CMAKE_C_FLAGS": "-O3 -flto",
+            "CMAKE_CXX_FLAGS": "-O3 -flto"
          }
       },
       {
          "name": "Unitests",
-         "description": "Enable debugging",
          "inherits": "Debug",
-         "binaryDir": "${sourceDir}/build/${presetName}",
+         "binaryDir": "${sourceDir}/build/",
          "cacheVariables": {
             "CMAKE_BUILD_TYPE": "Debug",
             "CMAKE_C_FLAGS_DEBUG": "-O0 -g3",
             "CMAKE_CXX_FLAGS_DEBUG": "-O0 -g3",
-            "MEG_ENABLE_TESTING": "on"
+            "MEG_ENABLE_TESTING": true
          }
       }
    ]

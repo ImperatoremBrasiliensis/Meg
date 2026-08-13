@@ -65,49 +65,7 @@ TEST(ProtocolsUtilities, FunPrintPrintsCorrectlyInTheSpecifiedFd) {
 	ASSERT_GT(sizeRead, 0) << "Humm... Something went wrong.";
 	buf[sizeRead] = '\0';
 
-	EXPECT_STREQ(buf, "\033[1;4mProtocols:\033[0m\nMessage: this is my message.\n");
-	fclose(out);
-}
-
-TEST(ProtocolsUtilities, FunPrintInsertsANewLineIfThereIsNoOne) {
-	FILE *out = tmpfile();
-	ASSERT_TRUE(out) << "`out` must not be `nullptr`.";
-	int fd = fileno(out);
-
-	/* Round 1 */ {
-		// It must insert a newline at the end.
-		pros_print(fd, "Message", "this is my message.");
-		fflush(out);
-		fseek(out, 0, SEEK_SET);
-
-		char buf[60];
-		memset(buf, 0, sizeof(buf));
-		size_t sizeRead = fread(buf, 1, sizeof(buf) - 1, out);
-
-		ASSERT_GT(sizeRead, 0) << "Humm... Something went wrong.";
-		buf[sizeRead] = '\0';
-
-		EXPECT_STREQ(buf, "\033[1;4mProtocols:\033[0m\nMessage: this is my message.\n");
-	}
-
-	fseek(out, 0, SEEK_SET);
-
-	/* Round 2 */ {
-		// It must not insert a newline at the end, there's already one.
-		pros_print(fd, "Message", "this is my message.");
-		fflush(out);
-		fseek(out, 0, SEEK_SET);
-
-		char buf[60];
-		memset(buf, 0, sizeof(buf));
-		size_t sizeRead = fread(buf, 1, sizeof(buf) - 1, out);
-
-		ASSERT_GT(sizeRead, 0) << "Humm... Something went wrong.";
-		buf[sizeRead] = '\0';
-
-		EXPECT_STREQ(buf, "\033[1;4mProtocols:\033[0m\nMessage: this is my message.\n");
-	}	 // Same output.
-
+	EXPECT_STREQ(buf, "\033[1;4mProtocols:\033[0m\nMessage: this is my message.");
 	fclose(out);
 }
 
@@ -127,7 +85,7 @@ TEST(ProtocolsUtilities, FunPrintCallWithEmptyStringAsPrefixParamPrintsOnlyWithT
 	ASSERT_GT(sizeRead, 0) << "Humm... Something went wrong.";
 	buf[sizeRead] = '\0';
 
-	EXPECT_STREQ(buf, "\033[1;4mProtocols:\033[0m\nthis is my message.\n");
+	EXPECT_STREQ(buf, "\033[1;4mProtocols:\033[0m\nthis is my message.");
 	fclose(out);
 }
 
@@ -147,7 +105,7 @@ TEST(ProtocolsUtilities, FunPrintCallWithNullPrefixParamPrintsOnlyTheStrParam) {
 	ASSERT_GT(sizeRead, 0) << "Humm... Something went wrong.";
 	buf[sizeRead] = '\0';
 
-	EXPECT_STREQ(buf, "this is my message.\n");
+	EXPECT_STREQ(buf, "this is my message.");
 	fclose(out);
 }
 

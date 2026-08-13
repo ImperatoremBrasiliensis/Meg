@@ -11,7 +11,7 @@ function(libprotocols_add_test test_name)
    endif()
 
    add_executable(${test_name} ${ARG_SRC})
-   target_link_libraries(${test_name} PUBLIC libprotocols gtest)
+   target_link_libraries(${test_name} PUBLIC libprotocols gtest itfc-pch_headers)
 
    include(GoogleTest)
    gtest_discover_tests(${test_name})

@@ -1,9 +1,13 @@
 # Configuration
 .vscode/
+.cache/
 
 # Build
 build/
 install/
+
+# Build files
+compile_commands.json
 
 # Diagnostigs
 .clangd
@@ -49,3 +53,6 @@ install/
 
 # debug information files
 *.dwo
+
+# Test source files
+*.test*

@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.20.0) 
+cmake_minimum_required(VERSION 3.20.0)
 project(
-   Meg VERSION 0.1.0 
+   Meg VERSION 0.1.0
    LANGUAGES C CXX
 )
 
@@ -14,6 +14,7 @@ if (MEG_ENABLE_TESTING)
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
+set(CMAKE_POSITION_INDEPENDENT_CODE on)
 
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED on)
@@ -24,8 +25,8 @@ set(CMAKE_CXX_EXTENSIONS off)
 
 add_library(itfc-pch_headers INTERFACE)
 target_precompile_headers(
-   itfc-pch_headers INTERFACE 
-   <gtest/gtest.h> 
+   itfc-pch_headers INTERFACE
+   <gtest/gtest.h>
    <gtest/gtest_pred_impl.h>
    <gtest/gtest_prod.h>
    <gtest/gtest-assertion-result.h>
@@ -35,6 +36,10 @@ target_precompile_headers(
    <gtest/gtest-spi.h>
    <gtest/gtest-test-part.h>
    <gtest/gtest-typed-test.h>
+   <string>
+   <iostream>
+   <filesystem>
+   <vector>
 )
 
 # Third-party libraries.
@@ -44,5 +49,4 @@ add_subdirectory(third-party)
 add_subdirectory(libprotocols)
 
 # Meg compiler
-add_subdirectory(libMeg)
-#add_subdirectory(Meg)
+add_subdirectory(Meg)

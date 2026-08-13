@@ -26,6 +26,7 @@
 
 PROTOCOLS_EXTERNC_START
 
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -71,6 +72,8 @@ void *pros_memcpy(const void *src, void *dst, size_t n);
 // the prefix.
 static constexpr const char prosDEFAULT_PRINT_PREFIX[] = "\033[1;4mProtocols:\033[0m\n";
 
+void pros_print__va(int fd, prosString pfx, prosString msg, va_list va);
+
 /**
  * @brief Prints a string to @p fd with prefix.
  *
@@ -96,7 +99,9 @@ static constexpr const char prosDEFAULT_PRINT_PREFIX[] = "\033[1;4mProtocols:\03
  * @param str The string to be printed after 
  * the prefix. May not be `nullptr`.
  */
-void pros_print(int fd, prosString pfx, prosString str);
+void pros_print(int fd, prosString pfx, prosString str, ...);
+
+/* ================= Vector ================= */
 
 /**
  * @brief Handle to an `prosVector` object.
@@ -123,7 +128,11 @@ void pros_print(int fd, prosString pfx, prosString str);
  * prosVector_del(&vector);
  * @endcode
  */
-typedef struct prosVector_s *prosVector;
+typedef struct prosVector_s {
+	void (*deleter)(void *self);
+	char *data;
+	uint32_t typeSize, capacity, size;
+} prosVector;
 
 /**
  * @brief Constructor for the `prosVector`
@@ -148,8 +157,8 @@ typedef struct prosVector_s *prosVector;
  * Might return `nullptr` if the 
  * initialization fails.
  */
-[[nodiscard("Assign this \"constructor\" to a `prosVector` handle.")]]
-prosVector prosVector_new(size_t typeSize);
+[[nodiscard]]
+prosVector prosVector_new(size_t typeSize, void (*deleter)(void *self));
 
 /**
  * @brief Destructor for the `prosVector`
@@ -239,6 +248,9 @@ bool prosVector_popBack(prosVector *self);
  * which copy the memory. May not be `nullptr`.
  * @param index Position in which insert the,
  * beginning by 0. 
+ *
+ * @return `true` if successful; `false` 
+ * otherwise.
  */
 void prosVector_insert(prosVector *self, const void *obj, uint32_t index);
 
@@ -261,6 +273,30 @@ void prosVector_insert(prosVector *self, const void *obj, uint32_t index);
  * otherwise.
  */
 bool prosVector_remove(prosVector *self, uint32_t index);
+
+/**
+ * @brief Copies the objects pointed by @p arr
+ * to the end of the vector.
+ *
+ * What this method actually does is copy
+ * the bytes of memory pointed by @p arr 
+ * in size of the type and paste it at the
+ * end of the vector. If the vector is full this
+ * method reserves more memory.
+ * 
+ * @param self Pointer to the handle of the 
+ * `prosVector` object. May not be `nullptr`.
+ * @param arr A pointer to the memory from
+ * which copy the memory. May not be `nullptr`.
+ * @param count How many objects are in the 
+ * array.
+ * 
+ * @return `true` if successful; `false` 
+ * otherwise.
+ */
+bool prosVector_pushArray(prosVector *self, void *arr, size_t count);
+
+bool prosVector_erase(prosVector *self, uint32_t index, size_t count);
 
 /**
  * @brief Returns a pointer to the object
@@ -369,6 +405,8 @@ uint32_t prosVector_getSize(prosVector *self);
 [[nodiscard]]
 void *prosVector_end(prosVector *self);
 
+/* ================= Little Vector ================= */
+
 PROTOCOLS_EXTERNC_END
 
-#endif	  // PROTOCOLS_UTILITIES_H
+#endif	// PROTOCOLS_UTILITIES_H
