@@ -13,7 +13,7 @@ jobs:
          - name: Install Dependencies
            run: |
                sudo apt-get update
-               sudo apt-get install -y cmake ninja-build wget
+               sudo apt-get install -y cmake ninja-build wget libxxhash-dev
                wget https://apt.llvm.org/llvm.sh
                chmod +x llvm.sh
                sudo ./llvm.sh 22 || exit 1

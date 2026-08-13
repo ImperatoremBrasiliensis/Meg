@@ -1,4 +1,4 @@
-### Protocols Programming Language Library
+# Protocols Programming Language Library
 
 &emsp;&emsp;Protocols (`libprotocols`) is a programming language developed
 to support the Meg compiler. Despite its name, `libprotocols`
@@ -9,7 +9,7 @@ simple programming language with a Python-like syntax.
 real programs and applications. However, if you want to
 contribute to it, contact me.
 
-# An Example
+### An Example
 
 For now, it only supports functions:
 
@@ -17,6 +17,6 @@ For now, it only supports functions:
 func f(x: int):
    val y = x * 10
    return y
-   // Obviously, you can a little more in `f()`.
+   // Obviously, you can do a little more in `f()`.
 ```
 
