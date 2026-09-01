@@ -1,0 +1,16 @@
+CompileFlags:
+  CompilationDatabase: build/
+  Add: [-ferror-limit=0]
+
+Diagnostics:
+  Suppress: ["pp_including_mainfile_in_preamble"]
+
+Hover:
+  ShowAKA: true
+
+Index:
+  Background: Skip
+  External: None
+
+Documentation:
+  CommentFormat: Doxygen

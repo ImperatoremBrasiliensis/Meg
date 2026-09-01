@@ -1,3 +1,17 @@
+# Configuration
+.vscode/
+.cache/
+
+# Build
+build/
+install/
+
+# Build files
+compile_commands.json
+
+# Diagnostigs
+.clangd
+
 # Prerequisites
 *.d
 
@@ -39,3 +53,6 @@
 
 # debug information files
 *.dwo
+
+# Test source files
+*.test*
