@@ -10,7 +10,6 @@ contribution.
 ## Some of its syntax
    The syntax will be like as follows:
 ```
-```
 \ Declares a function
   named 'sum'. \ 
 sum(x: i32, y: i32) := x + y
@@ -20,9 +19,7 @@ main(): i32 = {
    x := sum(20, 30)
    x \ Returns x, that is 50 \ 
 }
-
+```
 NOTE: Nothing works, yet...
-```
-```
 
 *In memory of Meg, my dog, 2020-2025.*
