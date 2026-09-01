@@ -23,30 +23,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 set(CMAKE_CXX_EXTENSIONS off)
 
-add_library(itfc-pch_headers INTERFACE)
-target_precompile_headers(
-   itfc-pch_headers INTERFACE
-   <gtest/gtest.h>
-   <gtest/gtest_pred_impl.h>
-   <gtest/gtest_prod.h>
-   <gtest/gtest-assertion-result.h>
-   <gtest/gtest-matchers.h>
-   <gtest/gtest-message.h>
-   <gtest/gtest-printers.h>
-   <gtest/gtest-spi.h>
-   <gtest/gtest-test-part.h>
-   <gtest/gtest-typed-test.h>
-   <string>
-   <iostream>
-   <filesystem>
-   <vector>
-)
-
-# Third-party libraries.
-add_subdirectory(third-party)
-
-# protocols
-add_subdirectory(libprotocols)
+# protocols (abandoned)
+# add_subdirectory(libprotocols)
 
 # Meg compiler
-add_subdirectory(Meg)
+add_subdirectory(megc)

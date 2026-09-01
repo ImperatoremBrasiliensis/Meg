@@ -394,8 +394,8 @@ void *prosVector_end(prosVector *self) {
 struct arenaBlock {
    struct arenaBlock *next;
    uint32_t size;
-   bool malloc;
-   char data[];
+   bool malloc, exclusive;
+   alignas(8) char data[];
 };
 
 prosArena prosArena_new(prosAllocator *allocator) {
@@ -439,7 +439,7 @@ void *prosArena_alloc(prosArena *self, size_t size) {
    auto cur = self->blocks;
 
    if (cur) {
-      size_t remaining = (prosARENA_BLOCK_SIZE - sizeof(struct arenaBlock)) - self->level;
+      size_t remaining = cur->size - self->level;
       size = (size + 7) & ~7;
 
       if (size <= remaining) {
@@ -447,24 +447,27 @@ void *prosArena_alloc(prosArena *self, size_t size) {
          self->level += size;
          return ptr;
       }
+   }
 
-      // Exclusive block;
-      if (size > prosARENA_BLOCK_SIZE) {
-         struct arenaBlock *ptr = malloc(sizeof(struct arenaBlock) + size);
-         *ptr = (struct arenaBlock){};
+   // Exclusive block;
+   if (size > prosARENA_BLOCK_SIZE - sizeof(struct arenaBlock)) {
+      struct arenaBlock *ptr = malloc(sizeof(struct arenaBlock) + size);
+      *ptr = (struct arenaBlock){};
 
-         if (self->xblocks)
-            self->xblocks->next = ptr;
-         self->xblocks = ptr;
-         return ptr->data;
-      }
+      if (self->xblocks)
+         self->xblocks->next = ptr;
+      self->xblocks = ptr;
+      return ptr->data;
    }
 
    struct arenaBlock *ptr = self->altor ?
       prosAllocator_alloc(self->altor, prosARENA_BLOCK_SIZE) :
       malloc(prosARENA_BLOCK_SIZE);
 
-   *ptr = (struct arenaBlock){.malloc = self->altor == nullptr};
+   *ptr = (struct arenaBlock){
+      .size = prosARENA_BLOCK_SIZE - sizeof(struct arenaBlock),
+      .malloc = self->altor == nullptr
+   };
    if (cur)
       cur->next = ptr;
    self->blocks = ptr;

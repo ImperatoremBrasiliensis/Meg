@@ -19,6 +19,7 @@ PROTOCOLS_EXTERNC_START
 #else
 #   include <unistd.h>
 #   define PROS_INLINE __attribute__((always_inline))
+#   define PROS_PACKED __attribute__((packed))
 #endif
 
 #include <threads.h>

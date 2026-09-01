@@ -1,5 +1,24 @@
 # The Meg Project
 
-Sorry... This project is not open for contributing yet. Maybe in the future.  
+   Welcome, this is The Meg Project!
 
-*However, if you'd like to contribute to libprotocols contact me. (see my profile)*
+   For now, the project contains only the Meg
+programming language, which is still in
+development. Feel free to open a pull request
+and contribute to it.
+
+   The `megc/` directory contains the code of
+the Meg Compiler, written in C. We need to
+provide an standard library, if you're
+interested contact-me (see my profile). Case
+you want to contribute to the `megc`, just
+open a pull request.
+
+   The `libprotocols/` is abandoned, but it
+will be rewritten in the future. If you
+are interested, contact me.
+
+> [!WARNING]
+> We **don't accept** AI generated code.
+
+   See `/LICENSE` for the GPL-3 license.

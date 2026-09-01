@@ -30,6 +30,9 @@ target_sources(
    include/internal/Code/Semantic/Scope.h
    include/internal/Code/Semantic/Semantics.h
    include/internal/Code/Analysis/CFG.h
+   include/internal/Code/LittleSenna/Bytecode.h
+   include/internal/Code/LittleSenna/LSMachine.h
+   include/internal/Code/Gen/Gen.h
    src/Orbita.c
    src/Output.c
    src/Utilities.c
@@ -46,6 +49,9 @@ target_sources(
    src/Code/Semantic/Scope.c
    src/Code/Semantic/Semantics.c
    src/Code/Analysis/CFG.c
+   src/Code/LittleSenna/Bytecode.c
+   src/Code/LittleSenna/LSMachine.c
+   src/Code/Gen/Gen.c
 )
 
-add_subdirectory(unitests)
+

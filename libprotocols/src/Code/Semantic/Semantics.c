@@ -8,6 +8,9 @@
 #include <internal/Code/Semantic/Semantics.h>
 
 #include <internal/Code/Analysis/CFG.h>
+#include <internal/Code/Gen/Gen.h>
+#include <internal/Code/LittleSenna/Bytecode.h>
+#include <internal/Code/LittleSenna/LSMachine.h>
 #include <internal/Orbita.h>
 #include <internal/Output.h>
 
@@ -158,6 +161,15 @@ bool prosSemantics_actOnOperationScope(
       ret = prosCFG_analyzeFunc(scope->owner, &self->allocator, dedent.loc) ?
          ret :
          false;
+      auto vac = prosGen_genFunction(scope->owner);
+      prosBytecode_dump((void *) vac.data, vac.size);
+
+      // Execute.
+      prosLSMachine mac = prosLSMachine_new(1024);
+      prosLSMachine_exec(&mac, (void *) vac.data);
+
+      prosLSMachine_del(&mac);
+      prosVector_del(&vac);
    }
 
    ret = semanticsCheckUpAndCloseScope(self) ? ret : false;
