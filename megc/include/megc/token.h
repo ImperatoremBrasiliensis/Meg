@@ -22,6 +22,7 @@ enum mtoken_kind {
 
    mTOK_TYPE,
    mTOK_LET,
+   mTOK_MUT,
    mTOK_NEW,
    mTOK_DEL,
    mTOK_DEFER,
@@ -52,8 +53,11 @@ enum mtoken_kind {
    mTOK_LAND,
    mTOK_LOR,
    mTOK_EQL,
+   mTOK_NEQ,
    mTOK_GTR,
    mTOK_LSS,
+   mTOK_GEQ,
+   mTOK_LEQ,
 
    mTOK_COMMA,
    mTOK_COLON,

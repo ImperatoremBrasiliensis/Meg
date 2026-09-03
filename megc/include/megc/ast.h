@@ -9,6 +9,7 @@
 
 #include <megc/loc.h>
 
+#include <stddef.h>
 #include <stdint.h>
 
 /* Unit. */
@@ -16,13 +17,6 @@
 struct munit {
    const char *name;
    struct mdecl *decls;
-};
-
-/* Concepts. */
-
-struct mtype {
-   const char *name;
-   bool mut;
 };
 
 /* Declarations. */
@@ -33,22 +27,38 @@ enum mdecl_kind {
    mDECL_OBJ
 };
 
-struct mdecl {
-   struct mdecl *next;
-   struct mloc loc;
-   const char *id;
-   struct mtype types;
-   union {
-      struct mtype_decl {
-         struct mdecl *decls;
-      } type;
+/* Concepts. */
 
-      struct mfunc_decl {
-         struct mdecl *params;
-         struct mexpr *expr;
-      } func;
+enum mtype_kind {
+   mTYPE_INVAL = 0,
+   mTYPE_IDENT,
+   mTYPE_STRUCT,
+   mTYPE_ARRAY,
+   mTYPE_SLICE
+};
+
+struct mtype {
+   union {
+      struct mident {
+         const char *name;
+      } ident;
+
+      struct mstruct {
+         struct mdecl *fields;
+      } struc;
+
+      struct marray {
+         struct mtype *type;
+         struct mexpr *size;
+      } array;
+
+      struct mslice {
+         struct mtype *szty;
+         struct mtype *rgty;
+      } slice;
    } as;
-   enum mdecl_kind kind;
+   bool mut;
+   enum mtype_kind kind;
 };
 
 /* Expressions. */
@@ -74,7 +84,13 @@ enum mbin_op_kind {
    mBIN_OP_BOR,
    mBIN_OP_EOR,
    mBIN_OP_LAND,
-   mBIN_OP_LOR
+   mBIN_OP_LOR,
+   mBIN_OP_EQL,
+   mBIN_OP_NEQ,
+   mBIN_OP_GTR,
+   mBIN_OP_LSS,
+   mBIN_OP_GEQ,
+   mBIN_OP_LEQ
 };
 
 enum muna_op_kind {
@@ -126,6 +142,20 @@ struct mexpr {
       } paren;
    } as;
    enum mexpr_kind kind;
+};
+
+struct mdecl {
+   struct mdecl *next;
+   struct mloc loc;
+   const char *id;
+   struct mtype *type;
+   union {
+      struct mfunc_decl {
+         struct mdecl *params;
+         struct mexpr *expr;
+      } func;
+   } as;
+   enum mdecl_kind kind;
 };
 
 /* Statements. */

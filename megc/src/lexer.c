@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 
 struct mlexer mlexer_new(
    struct mstrpool *strpool,
@@ -60,7 +61,49 @@ static inline void readuntil(struct mlexer *self, char c) {
    }
 }
 
-static const char *getid(struct mlexer *self) {
+static enum mtoken_kind iskeyword(
+   const char *id,
+   size_t len
+) {
+   constexpr struct {
+      size_t len;
+      const char kw[16];
+      enum mtoken_kind kind;
+   } keywords[] = {
+      {4, "type", mTOK_TYPE},
+      {3, "let", mTOK_LET},
+      {3, "mut", mTOK_MUT},
+      {3, "new", mTOK_NEW},
+      {3, "del", mTOK_DEL},
+      {5, "defer", mTOK_DEFER},
+      {2, "if", mTOK_IF},
+      {2, "or", mTOK_OR},
+      {4, "else", mTOK_ELSE},
+      {5, "while", mTOK_WHILE},
+      {3, "for", mTOK_FOR},
+      {4, "loop", mTOK_LOOP},
+      {5, "break", mTOK_BREAK},
+      {8, "continue", mTOK_CONTINUE}
+   };
+
+   constexpr int arrsz =
+      sizeof keywords / sizeof keywords[0];
+
+   for (int i = 0; i < arrsz; i++) {
+      if (keywords[i].len == len) {
+         if (!memcmp(keywords[i].kw, id, len)) {
+            return keywords[i].kind;
+         }
+      }
+   }
+
+   return mTOK_ID;
+}
+
+static struct mtoken getid(
+   struct mlexer *self,
+   struct mloc loc
+) {
    const char *beg = &self->buf[self->off];
    size_t len = 0;
 
@@ -74,12 +117,18 @@ static const char *getid(struct mlexer *self) {
       self->off++;
    }
 
-   self->column += len;
-   return mstrpool_insert(
+   const char *entry = mstrpool_insert(
       self->strpool,
       beg,
       len
    );
+
+   self->column += len;
+   return (struct mtoken){
+      .kind = iskeyword(beg, len),
+      .loc = loc,
+      .lit = entry
+   };
 }
 
 static char getscape(struct mlexer *self) {
@@ -144,7 +193,7 @@ static const char *getstr(struct mlexer *self) {
       }
 
       if (len >= sizeof str) {
-         mferro(loc, "Sting too large.");
+         mferro(loc, "String too large.");
          while (c != '"') {
             c = getch(self);
             if (c == '\0' || c == '\n') {
@@ -310,6 +359,38 @@ eval:
          goto final;
       }
 
+      if (busz == sizeof buf) {
+         mferro(ret.loc, "Number too long.");
+         /* kip loop 'gambiarra'. */
+         while (
+            isdigit(c) ||
+            (base == 16 ?
+                  c == 'a' ||
+                     c == 'b' ||
+                     c == 'c' ||
+                     c == 'd' ||
+                     c == 'e' ||
+                     c == 'f' :
+                  false)
+         ) {
+            if (c == 'E') {
+               c = getch(self);
+               while (
+                  isdigit(c) ||
+                  c == '+' ||
+                  c == '-'
+               ) {
+                  c = getch(self);
+               }
+            }
+
+            c = getch(self);
+         }
+
+         return (struct mtoken){
+            .kind = mTOK_INVAL
+         };
+      }
       c = getch(self);
       issep = false;
    }
@@ -363,9 +444,7 @@ again:
 
    if (isalpha(c) || c == '_') {
       ungetch(self);
-      ret.kind = mTOK_ID;
-      ret.lit = getid(self);
-      goto end;
+      return getid(self, ret.loc);
    }
 
    if (isdigit(c)) {
@@ -465,6 +544,14 @@ again:
       ret.kind = mTOK_EOR;
       break;
    case '!':
+      ch = getch(self);
+      if (ch == '=') {
+         ret.kind = mTOK_NEQ;
+         break;
+      }
+      if (ch != '\0') {
+         ungetch(self);
+      }
       ret.kind = mTOK_NEG;
       break;
 
@@ -496,7 +583,37 @@ again:
       ret.kind = mTOK_RBRACE;
       break;
    case '=':
+      ch = getch(self);
+      if (ch == '=') {
+         ret.kind = mTOK_EQL;
+         break;
+      }
+      if (ch != '\0') {
+         ungetch(self);
+      }
       ret.kind = mTOK_ASSIGN;
+      break;
+   case '>':
+      ch = getch(self);
+      if (ch == '=') {
+         ret.kind = mTOK_GEQ;
+         break;
+      }
+      if (ch != '\0') {
+         ungetch(self);
+      }
+      ret.kind = mTOK_GTR;
+      break;
+   case '<':
+      ch = getch(self);
+      if (ch == '=') {
+         ret.kind = mTOK_LEQ;
+         break;
+      }
+      if (ch == '\0') {
+         ungetch(self);
+      }
+      ret.kind = mTOK_LSS;
       break;
 
    case '$':

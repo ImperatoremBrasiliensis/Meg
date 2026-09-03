@@ -21,6 +21,47 @@ void munit_print(struct munit *u) {
    puts("}");
 }
 
+void mtype_print(struct mtype *t, int ind) {
+   indent(ind);
+
+   switch (t->kind) {
+   case mTYPE_INVAL:
+      puts("Type is Invalid");
+      break;
+   case mTYPE_IDENT:
+      printf(
+         "TypeIdent %s, mut: %s\n",
+         t->as.ident.name,
+         t->mut ?
+            "true" :
+            "false"
+      );
+      break;
+   case mTYPE_STRUCT:
+      printf(
+         "TypeStruct, mut: %s {\n",
+         t->mut ? "true" : "false"
+      );
+      mdecl_print(t->as.struc.fields, ind + 1);
+      indent(ind);
+      puts("}");
+      break;
+   case mTYPE_ARRAY:
+      printf("TypeArray, mut: %s {\n", t->mut ? "true" : "false");
+      mexpr_print(t->as.array.size, ind + 1);
+      mtype_print(t->as.array.type, ind + 1);
+      indent(ind);
+      puts("}");
+      break;
+   case mTYPE_SLICE:
+      printf("TypeSlice, mut: %s {\n", t->mut ? "true" : "false");
+      mtype_print(t->as.slice.szty, ind + 1);
+      indent(ind + 1);
+      puts("}");
+      break;
+   }
+}
+
 void mdecl_print(struct mdecl *d, int ind) {
    indent(ind);
 
@@ -29,24 +70,31 @@ void mdecl_print(struct mdecl *d, int ind) {
       puts("Decl is Invalid");
       break;
    case mDECL_FUNC:
-      printf("DeclFunc '%s' -> '%s' {", d->id, d->types.name);
+      printf("DeclFunc '%s' -> \n", d->id);
+      if (d->type) {
+         mtype_print(d->type, ind + 1);
+      }
       if (d->as.func.params) {
-         puts("");
          mdecl_print(d->as.func.params, ind + 1);
-         indent(ind);
       }
 
       if (d->as.func.expr) {
-         puts("");
          mexpr_print(d->as.func.expr, ind + 1);
+         indent(ind);
+      }
+
+      puts("}");
+      break;
+   case mDECL_OBJ:
+      printf("DeclObj '%s'", d->id);
+      if (d->type) {
+         puts(" {");
+         mtype_print(d->type, ind + 1);
          indent(ind);
          puts("}");
       } else {
-         puts("}");
+         puts("");
       }
-      break;
-   case mDECL_OBJ:
-      printf("DeclObj '%s': %s\n", d->id, d->types.name);
       break;
    }
 
@@ -99,6 +147,24 @@ void mexpr_print(struct mexpr *e, int ind) {
       case mBIN_OP_LOR:
          name = "||";
          break;
+      case mBIN_OP_EQL:
+         name = "==";
+         break;
+      case mBIN_OP_NEQ:
+         name = "!=";
+         break;
+      case mBIN_OP_GTR:
+         name = ">";
+         break;
+      case mBIN_OP_LSS:
+         name = "<";
+         break;
+      case mBIN_OP_GEQ:
+         name = ">=";
+         break;
+      case mBIN_OP_LEQ:
+         name = "<=";
+         break;
       }
       printf("ExprBinOp %s {\n", name);
       mexpr_print(e->as.bin_op.lhs, ind + 1);
@@ -132,7 +198,9 @@ void mexpr_print(struct mexpr *e, int ind) {
    case mEXPR_CALL:
       puts("ExprCall {");
       mexpr_print(e->as.call.decl, ind + 1);
-      mexpr_print(e->as.call.args, ind + 1);
+      if (e->as.call.args) {
+         mexpr_print(e->as.call.args, ind + 1);
+      }
       indent(ind);
       puts("}");
       break;

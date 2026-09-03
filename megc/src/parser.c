@@ -101,18 +101,21 @@ again:
 
 /* Concepts. */
 
-static struct mtype parse_type(struct parser *self) {
+static struct mtype *parse_type(struct parser *self) {
    struct mtoken tok;
-   if (expect(self, &tok, mTOK_ID)) {
-      return (struct mtype){
-         .name = tok.lit,
-         .mut = true
-      };
+   struct mtype *ret = malloc(sizeof *ret);
+   *ret = (struct mtype){};
+
+   if (expect(self, &tok, mTOK_MUT)) {
+      ret->mut = true;
    }
 
-   return (struct mtype){
-      .mut = true
-   };
+   if (expect(self, &tok, mTOK_ID)) {
+      ret->kind = mTYPE_IDENT;
+      ret->as.ident.name = tok.lit;
+   }
+
+   return ret;
 }
 
 /* Expressions. */
@@ -195,8 +198,11 @@ static struct expr LED_OPS[mTOK_MAX] = {
    [mTOK_AND] = {50, nullptr, parse_bin_op},
 
    [mTOK_EQL] = {60, nullptr, parse_bin_op},
+   [mTOK_NEQ] = {60, nullptr, parse_bin_op},
    [mTOK_GTR] = {60, nullptr, parse_bin_op},
    [mTOK_LSS] = {60, nullptr, parse_bin_op},
+   [mTOK_GEQ] = {60, nullptr, parse_bin_op},
+   [mTOK_LEQ] = {60, nullptr, parse_bin_op},
 
    [mTOK_ADD] = {70, nullptr, parse_bin_op},
    [mTOK_SUB] = {70, nullptr, parse_bin_op},
@@ -213,9 +219,8 @@ static struct mexpr *parse_call(
    struct mtoken tok,
    struct mexpr *expr
 ) {
-   assert(expr->kind == mEXPR_DECL_REF);
    assert(tok.kind == mTOK_LPAREN);
-   advance(self);
+   advance(self);  // Skips the left paren.
 
    struct mexpr *ret = malloc(sizeof *ret);
    *ret = (struct mexpr){
@@ -228,10 +233,10 @@ static struct mexpr *parse_call(
 
    struct mexpr *farg = nullptr;  // Fisrt arg.
    struct mexpr *larg = farg;     // Last arg.
-   if (cur(self).kind != mTOK_RPAREN) {
+   if (!expect(self, &tok, mTOK_RPAREN)) {
       while (true) {
-         if (cur(self).kind == mTOK_COMMA) {
-            mferro(cur(self).loc, "Expected argument expression.");
+         if (expect(self, &tok, mTOK_COMMA)) {
+            mferro(tok.loc, "Expected argument expression.");
             continue;
          }
 
@@ -358,6 +363,39 @@ static struct mexpr *parse_bin_op(
       break;
    case mTOK_MOD:
       kind = mBIN_OP_MOD;
+      break;
+   case mTOK_AND:
+      kind = mBIN_OP_AND;
+      break;
+   case mTOK_BOR:
+      kind = mBIN_OP_BOR;
+      break;
+   case mTOK_EOR:
+      kind = mBIN_OP_EOR;
+      break;
+   case mTOK_LAND:
+      kind = mBIN_OP_LAND;
+      break;
+   case mTOK_LOR:
+      kind = mBIN_OP_LOR;
+      break;
+   case mTOK_EQL:
+      kind = mBIN_OP_EQL;
+      break;
+   case mTOK_NEQ:
+      kind = mBIN_OP_NEQ;
+      break;
+   case mTOK_GTR:
+      kind = mBIN_OP_GTR;
+      break;
+   case mTOK_LSS:
+      kind = mBIN_OP_LSS;
+      break;
+   case mTOK_GEQ:
+      kind = mBIN_OP_GEQ;
+      break;
+   case mTOK_LEQ:
+      kind = mBIN_OP_LEQ;
       break;
    default:
       madeus("Invalid binary operator.");
@@ -498,7 +536,7 @@ static struct mdecl *parse_objdecl(struct parser *self) {
       goto inval;
    }
 
-   ret->types = parse_type(self);
+   ret->type = parse_type(self);
    return ret;
 
 inval:
@@ -559,7 +597,7 @@ static struct mdecl *parse_func(struct parser *self) {
       "Not a function decl"
    );
 
-   auto tok = self->fst;
+   auto tok = cur(self);
 
    struct mdecl *ret = malloc(sizeof *ret);
    *ret = (struct mdecl){
@@ -571,21 +609,19 @@ static struct mdecl *parse_func(struct parser *self) {
    tok = advance(self);
 
    /* Parses all the parameters if any. */
-   if (expect(self, &tok, mTOK_RPAREN)) {
-      advance(self);
-   } else {
+   if (!expect(self, &tok, mTOK_RPAREN)) {
       ret->as.func.params =
          parse_initlist(self, mTOK_RPAREN);
    }
 
-   tok = self->fst;
+   tok = cur(self);
    if (tok.kind != mTOK_COLON) {
       mferro(tok.loc, "Expected ':' followed by the result type.");
       skipuntil(self, mTOK_EOL);
       goto inval;
    }
    advance(self);
-   ret->types = parse_type(self);
+   ret->type = parse_type(self);
 
    if (!eol(self, &tok)) {
       if (expect(self, &tok, mTOK_ASSIGN)) {
@@ -682,7 +718,7 @@ bool mparse_unit(const char *src) {
    size_t filesz = ftell(file);
 
    /* Allocates a buffer and copies the file. */
-   char *buf = malloc(filesz);
+   char *buf = malloc(filesz + 1);
    fseek(file, 0, SEEK_SET);
    fread(buf, filesz, 1, file);
    buf[filesz] = '\0';
