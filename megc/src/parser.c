@@ -35,12 +35,16 @@ static struct mtoken advance(struct parser *self) {
 }
 
 /* Current token. */
-static inline struct mtoken cur(struct parser *self) {
+static inline struct mtoken cur(
+   struct parser *self
+) {
    return self->fst;
 }
 
 /* Skips mTOK_DOC and mTOK_EOL, if any. */
-static inline struct mtoken nxtvalid(struct parser *self) {
+static inline struct mtoken nxtvalid(
+   struct parser *self
+) {
    auto t = cur(self);
    while (t.kind != mTOK_EOF) {
       if (
@@ -55,7 +59,10 @@ static inline struct mtoken nxtvalid(struct parser *self) {
    return t;
 }
 
-static void skipuntil(struct parser *self, enum mtoken_kind tok) {
+static void skipuntil(
+   struct parser *self,
+   enum mtoken_kind tok
+) {
    while (cur(self).kind != tok) {
       auto t = advance(self);
       if (t.kind == mTOK_EOF) {
@@ -133,7 +140,10 @@ struct expr {
    );
 };
 
-static struct mexpr *parse_expr(struct parser *self, int prec);
+static struct mexpr *parse_expr(
+   struct parser *self,
+   int prec
+);
 static struct mexpr *parse_bin_op(
    struct parser *self,
    struct mtoken tok,
@@ -254,6 +264,9 @@ static struct mexpr *parse_call(
             if (!expect(self, &tok, mTOK_RPAREN)) {
                mferro(tok.loc, "Expected ',' or ')' in argument list.");
                skipuntil(self, mTOK_RPAREN);
+               /* Free and invalidate. */
+               mexpr_del(expr);
+               mexpr_del(arg);
                goto inval;
             }
             break;
@@ -415,6 +428,9 @@ static struct mexpr *parse_bin_op(
    ret->as.bin_op.rhs = parse_expr(self, prec);
    if (!ret->as.bin_op.rhs) {
       mferro(cur(self).loc, "Invalid operand.");
+      /* Free and invalidate */
+      mexpr_del(expr);
+      mexpr_del(ret->as.bin_op.rhs);
       goto inval;
    }
 
@@ -459,6 +475,8 @@ static struct mexpr *parse_una_op(
    ret->as.una_op.oprnd = parse_expr(self, prec);
    if (!ret->as.una_op.oprnd) {
       mferro(cur(self).loc, "Invalid operand.");
+      /* Free and invalidate. */
+      mexpr_del(ret->as.una_op.oprnd);
       goto inval;
    }
 
@@ -641,10 +659,12 @@ inval:
 
 /* Unit */
 
-static struct munit parse_unit(struct parser *self) {
+static struct munit *parse_unit(struct parser *self) {
+   struct munit *ret = malloc(sizeof *ret);
    auto tok = advance(self);
-   struct mdecl *fst = nullptr, *lst = fst;
+   *ret = (struct munit){};
 
+   struct mdecl *fst = nullptr, *lst = fst;
    while (true) {
       switch (tok.kind) {
       case mTOK_INVAL:
@@ -696,9 +716,8 @@ static struct munit parse_unit(struct parser *self) {
    }
 
 end:
-   return (struct munit){
-      .decls = fst
-   };
+   ret->decls = fst;
+   return ret;
 }
 
 bool mparse_unit(const char *src) {
@@ -732,11 +751,12 @@ bool mparse_unit(const char *src) {
 
    /* Parse! */
    auto unit = parse_unit(&self);
-   unit.name = src;
+   unit->name = src;
 
    /* Print! */
-   munit_print(&unit);
+   munit_print(unit);
 
+   munit_del(unit);
    mstrpool_del(&strpool);
    fclose(file);
    free(buf);

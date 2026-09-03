@@ -7,7 +7,119 @@
 
 #include <megc/ast.h>
 
+#include <malloc.h>
 #include <stdio.h>
+
+void munit_del(struct munit *self) {
+   mdecl_del(self->decls);
+   free(self);
+}
+
+void mtype_del(struct mtype *self) {
+   switch (self->kind) {
+   case mTYPE_INVAL:
+      /*
+       * Invalid nodes cannot
+       * have memory allocations.
+       */
+      break;
+   case mTYPE_IDENT:
+      break;
+   case mTYPE_STRUCT:
+      if (self->as.struc.fields) {
+         mdecl_del(self->as.struc.fields);
+      }
+      break;
+   case mTYPE_ARRAY:
+      if (self->as.array.type) {
+         mtype_del(self->as.array.type);
+      }
+      if (self->as.array.size) {
+         mexpr_del(self->as.array.size);
+      }
+      break;
+   case mTYPE_SLICE:
+      if (self->as.slice.szty) {
+         mtype_del(self->as.slice.szty);
+      }
+      if (self->as.slice.rgty) {
+         mtype_del(self->as.slice.rgty);
+      }
+      break;
+   }
+
+   free(self);
+}
+
+void mexpr_del(struct mexpr *self) {
+   if (self->next) {
+      /* It's an expression list. */
+      mexpr_del(self->next);
+   }
+
+   switch (self->kind) {
+   case mEXPR_INVAL:
+      /*
+       * Invalid nodes cannot
+       * have memory allocations.
+       */
+      break;
+   case mEXPR_BIN_OP:
+      mexpr_del(self->as.bin_op.lhs);
+      if (self->as.bin_op.rhs) {  // Optional field.
+         mexpr_del(self->as.bin_op.rhs);
+      }
+      break;
+   case mEXPR_UNA_OP:
+      mexpr_del(self->as.una_op.oprnd);
+      break;
+   case mEXPR_DECL_REF:
+      break;
+   case mEXPR_CALL:
+      mexpr_del(self->as.call.decl);
+      if (self->as.call.args) {
+         mexpr_del(self->as.call.args);
+      }
+      break;
+   case mEXPR_LIT:
+      break;
+   case mEXPR_PAREN:
+      mexpr_del(self->as.paren.child);
+      break;
+   }
+
+   free(self);
+}
+
+void mdecl_del(struct mdecl *self) {
+   if (self->next) {
+      mdecl_del(self->next);
+   }
+
+   switch (self->kind) {
+   case mDECL_INVAL:
+      /*
+       * Invalid nodes cannot
+       * have memory allocations.
+       */
+      break;
+   case mDECL_FUNC:
+      if (self->as.func.params) {
+         mdecl_del(self->as.func.params);
+      }
+      if (self->as.func.expr) {
+         mexpr_del(self->as.func.expr);
+      }
+      break;
+   case mDECL_OBJ:
+      break;
+   }
+
+   if (self->type) {
+      mtype_del(self->type);
+   }
+   free(self);
+}
 
 static void indent(int ind) {
    while (ind--) {
@@ -70,7 +182,7 @@ void mdecl_print(struct mdecl *d, int ind) {
       puts("Decl is Invalid");
       break;
    case mDECL_FUNC:
-      printf("DeclFunc '%s' -> \n", d->id);
+      printf("DeclFunc '%s' {\n", d->id);
       if (d->type) {
          mtype_print(d->type, ind + 1);
       }

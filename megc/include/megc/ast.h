@@ -19,13 +19,7 @@ struct munit {
    struct mdecl *decls;
 };
 
-/* Declarations. */
-
-enum mdecl_kind {
-   mDECL_INVAL = 0,
-   mDECL_FUNC,
-   mDECL_OBJ
-};
+void munit_del(struct munit *self);
 
 /* Concepts. */
 
@@ -60,6 +54,8 @@ struct mtype {
    bool mut;
    enum mtype_kind kind;
 };
+
+void mtype_del(struct mtype *self);
 
 /* Expressions. */
 
@@ -128,7 +124,7 @@ struct mexpr {
       } decl_ref;
 
       struct mcall {
-         struct mexpr *decl;  // Any callable type expr.
+         struct mexpr *decl;  // Any callable expr.
          struct mexpr *args;
       } call;
 
@@ -144,6 +140,16 @@ struct mexpr {
    enum mexpr_kind kind;
 };
 
+void mexpr_del(struct mexpr *self);
+
+/* Declarations. */
+
+enum mdecl_kind {
+   mDECL_INVAL = 0,
+   mDECL_FUNC,
+   mDECL_OBJ
+};
+
 struct mdecl {
    struct mdecl *next;
    struct mloc loc;
@@ -157,6 +163,8 @@ struct mdecl {
    } as;
    enum mdecl_kind kind;
 };
+
+void mdecl_del(struct mdecl *self);
 
 /* Statements. */
 
